@@ -1,6 +1,6 @@
 import LoginButton from '@/components/auth/LoginButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Surf } from 'lucide-react'; // Using an existing icon that fits the theme
+import { Waves } from 'lucide-react'; // Using an existing icon that fits the theme
 
 export default function HomePage() {
   return (
@@ -8,7 +8,7 @@ export default function HomePage() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">
-            <Surf size={48} className="text-primary" />
+            <Waves size={48} className="text-primary" />
           </div>
           <CardTitle className="text-3xl font-headline text-primary">Repo Surfer</CardTitle>
           <CardDescription className="text-muted-foreground pt-2">
