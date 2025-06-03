@@ -1,3 +1,4 @@
+
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -30,9 +31,10 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  Star, GitFork, Eye, Users, GitCommit, GitBranch as GitBranchIcon, GitPullRequest, AlertCircle as IssueIcon, ListChecks, CodeIcon as Code, ArrowLeft, ExternalLink, Info, UsersRound, BookText, LanguagesIcon, History
-} from "lucide-react"; // Using specific names for icons
+  Star, GitFork, Eye, Users, GitCommit, GitBranch as GitBranchIcon, GitPullRequest, AlertCircle as IssueIcon, ListChecks, CodeIcon as Code, ArrowLeft, ExternalLink, Info, UsersRound, BookText, Languages as LanguagesIcon, History // Renamed Languages to LanguagesIcon
+} from "lucide-react"; 
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface RepoDetailPageProps {
   params: {
@@ -63,9 +65,8 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
     redirect('/');
   }
 
-  constauthUser = await getGitHubUser(accessToken);
+  const authUser = await getGitHubUser(accessToken);
   if (!authUser) {
-    // This scenario should ideally be caught by middleware or earlier checks
     cookieStore.delete(AUTH_TOKEN_COOKIE);
     redirect('/?error=auth_failed_repo_detail');
   }
@@ -89,18 +90,17 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
   }
 
   const owner = params.fullName[0];
-  const repoName = params.fullName.slice(1).join('/'); // Handle repo names with slashes, though GH usually doesn't allow them in that part of URL path.
+  const repoName = params.fullName.slice(1).join('/');
 
-  // Fetch all data in parallel
   const results = await Promise.allSettled([
     getRepoDetails(accessToken, owner, repoName), // 0
     getRepoTotalCommits(accessToken, owner, repoName), // 1
     getRecentCommits(accessToken, owner, repoName, 5), // 2
     getRepoBranches(accessToken, owner, repoName), // 3
     getRepoPullRequestsCount(accessToken, owner, repoName, 'open'), // 4
-    getRepoPullRequestsCount(accessToken, owner, repoName, 'closed'), // 5 (total closed, includes merged)
+    getRepoPullRequestsCount(accessToken, owner, repoName, 'closed'), // 5 
     getRepoPullRequestsCount(accessToken, owner, repoName, 'merged'), // 6
-    getRepoClosedIssuesCount(accessToken, owner, repoName), // 7 (open issues count is in repoDetails)
+    getRepoClosedIssuesCount(accessToken, owner, repoName), // 7 
     getRepoLanguages(accessToken, owner, repoName), // 8
     getRepoContributors(accessToken, owner, repoName), // 9
   ]);
@@ -111,7 +111,7 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
       return result.value as T;
     }
     if (result.status === 'rejected') {
-      console.error(`Error fetching data at index ${index}:`, result.reason);
+      console.error(`Error fetching data at index ${index} for ${owner}/${repoName}:`, result.reason);
     }
     return defaultValue;
   };
@@ -121,7 +121,7 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
   const recentCommits = getResultValue<GitHubCommit[]>(2, []);
   const branches = getResultValue<GitHubBranch[]>(3, []);
   const openPRCount = getResultValue<number>(4, 0);
-  const closedPRCount = getResultValue<number>(5, 0); // Total closed (includes merged)
+  const closedPRCount = getResultValue<number>(5, 0); 
   const mergedPRCount = getResultValue<number>(6, 0);
   const closedIssuesCount = getResultValue<number>(7, 0);
   const languages = getResultValue<GitHubLanguages | null>(8, null);
@@ -147,8 +147,6 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
     );
   }
   
-  const totalPRCount = openPRCount + closedPRCount; // This might double count merged if closedPRCount includes merged.
-                                                 // Let's use openPRCount, mergedPRCount, and (closedPRCount - mergedPRCount) for unmerged_closed
   const unmergedClosedPRCount = closedPRCount - mergedPRCount;
 
 
@@ -162,7 +160,6 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
           </Button>
         </div>
 
-        {/* Repo Header Card */}
         <Card className="mb-8 shadow-xl">
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
@@ -192,7 +189,6 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Column 1: Commits & Branches */}
           <div className="lg:col-span-2 space-y-6">
             <DataCard title="Commit Activity" icon={History}>
               <p className="text-muted-foreground mb-1">Total Commits: <span className="font-semibold text-foreground">{totalCommits > 0 ? totalCommits : 'N/A'}</span></p>
@@ -222,7 +218,6 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
                   {branches.map(branch => (
                     <li key={branch.name} className="text-sm flex justify-between items-center p-1.5 hover:bg-secondary rounded-md">
                       <span>{branch.name} {branch.name === repoDetails.default_branch && <Badge variant="outline" className="ml-2 text-xs">Default</Badge>}</span>
-                      {/* <Link href={`${repoDetails.html_url}/tree/${branch.name}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">View</Link> */}
                     </li>
                   ))}
                 </ul>
@@ -230,7 +225,6 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
             </DataCard>
           </div>
 
-          {/* Column 2: PRs, Issues, Languages, Contributors */}
           <div className="space-y-6">
             <DataCard title="Pull Requests" icon={GitPullRequest}>
               <ul className="space-y-1 text-sm">
@@ -252,10 +246,9 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
               {languages && Object.keys(languages).length > 0 ? (
                 <ul className="space-y-1">
                   {Object.entries(languages)
-                    .sort(([, a], [, b]) => b - a) // Sort by usage
+                    .sort(([, a], [, b]) => b - a) 
                     .map(([lang, bytes]) => (
                     <li key={lang} className="text-sm">{lang} 
-                      {/* Optional: calculate percentage for a simple bar or more info */}
                     </li>
                   ))}
                 </ul>
@@ -289,3 +282,5 @@ export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
     </div>
   );
 }
+
+      
